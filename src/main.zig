@@ -29,12 +29,27 @@ const Game = struct {
     }
 };
 
-pub fn get_input(_ : []u8) !void
+pub fn get_space() usize
 {
-    var buf : [2]u8 = undefined;
+    const input_max : u8 = 2;
+    var buf : [input_max]u8 = undefined;
     // handle when the user tries to input something too long
-    _ = try stdin.readUntilDelimiterOrEof(&buf, '\n');
-    print("in get_input: {s}", .{buf});
+    const result = while (true){
+        const string = stdin.readUntilDelimiterOrEof(&buf, '\n') catch {
+            print("Bad input, try again.\n",.{});
+            continue;
+        };
+        const value = std.fmt.parseInt(i32, string orelse "bad", 10) catch {
+            print("Not a number, try again.\n",.{});
+            continue;
+        };
+        if (value < 1 or value > 9){
+            print("Too large or too small of a number.\n",.{});
+            continue;
+        }
+        break value;
+    };
+    return @intCast(result);
 }
 
 pub fn check_rows(_ : []u8) bool {
@@ -45,8 +60,22 @@ pub fn check_cols(_ : []u8) bool {
     return false;
 }
 
-pub fn turn(_ : Player, board : []u8) !bool {
-    _ = try get_input(board[0..]);
+pub fn turn(player : Player, board : []u8) !bool {
+    const value = get_space();
+    // TODO: Put this into it's own "place on board" function
+    print("value: {}\n",.{value});
+    print("board[0]: {}\n",.{board[0]});
+    while (true) {
+        if (board[value - 1] == 'a'){
+            board[value - 1] = player.player_num;
+            print("board[value - 1]: {c}\n",.{board[value - 1]});
+        }
+        else {
+            print("That spot has already been picked.\n",.{});
+            continue;
+        }
+        break;
+    }
     // need to first get the input from a player
         // assign on the board
     // then need to check for a win
@@ -56,7 +85,7 @@ pub fn turn(_ : Player, board : []u8) !bool {
 
 pub fn start() !void {
     var game : Game = .init(.{.player_num = '1', .turns_taken = 0}, .{.player_num = '2', .turns_taken = 0});
-    print("Game.player1.player_num: {}\n", .{game.player1.player_num});
+    print("Game.player1.player_num: {c}\n", .{game.player1.player_num});
 
     var game_over : bool = false;
     while (!game_over)
