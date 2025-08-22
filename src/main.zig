@@ -52,23 +52,56 @@ pub fn get_space() usize
     return @intCast(result);
 }
 
-pub fn check_rows(_ : []u8) bool {
+pub fn check_rows(player : Player, board : []u8) bool {
+    for (0..3) |row| {
+        var counter : i32 = 0;
+        for (0..3) |col| {
+            if (board[row*3+col] == player.player_num) {
+                counter += 1;
+            }
+        }
+        if (counter == 3) {return true;}
+    }
     return false;
 }
 
-pub fn check_cols(_ : []u8) bool {
+pub fn check_cols(player : Player, board : []u8) bool {
+    for (0..3) |row| {
+        var counter : i32 = 0;
+        for (0..3) |col| {
+            if (board[col*3+row] == player.player_num) {
+                counter += 1;
+            }
+        }
+        if (counter == 3) {return true;}
+    }
     return false;
 }
 
-pub fn turn(player : Player, board : []u8) !bool {
-    const value = get_space();
-    // TODO: Put this into it's own "place on board" function
-    print("value: {}\n",.{value});
-    print("board[0]: {}\n",.{board[0]});
+pub fn check_diags(player : Player, board : []u8) bool {
+    var i : usize = 0;
+    var counter : i32 = 0;
+    // top left to bottom right diagonal
+    while (i <= 8) : (i += 2){
+        if (board[i] == player.player_num) {counter += 1;}
+    }
+    if (counter == 3) {return true;}
+    // TODO: top right to bottom left diagonal
+    return false;
+}
+
+pub fn check_for_win(player : Player, board : []u8) bool {
+    const win_rows = check_rows(player, board[0..]);
+    const win_cols = check_cols(player, board[0..]);
+    const win_diag = check_diags(player, board[0..]);
+    return (win_rows or win_cols or win_diag);
+}
+
+pub fn place_on_board(index : usize, player : Player, board : []u8) void{
     while (true) {
-        if (board[value - 1] == 'a'){
-            board[value - 1] = player.player_num;
-            print("board[value - 1]: {c}\n",.{board[value - 1]});
+        if (board[index - 1] == 'a'){
+            board[index - 1] = player.player_num;
+            print("board[value - 1]: {c}\n",.{board[index - 1]});
         }
         else {
             print("That spot has already been picked.\n",.{});
@@ -76,11 +109,15 @@ pub fn turn(player : Player, board : []u8) !bool {
         }
         break;
     }
-    // need to first get the input from a player
-        // assign on the board
-    // then need to check for a win
-    return true;
+}
 
+pub fn turn(player : Player, board : []u8) !bool {
+    const value = get_space();
+    print("value: {}\n",.{value});
+    print("board[0]: {}\n",.{board[0]});
+    place_on_board(value, player, board[0..]);
+    // then need to check for a win
+    return check_for_win(player, board[0..]);
 }
 
 pub fn start() !void {
