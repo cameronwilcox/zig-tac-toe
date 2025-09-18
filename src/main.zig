@@ -29,6 +29,18 @@ const Game = struct {
     }
 };
 
+// TODO: : implement printing of the board
+pub fn print_board(board : []u8) void
+{
+    for (0..board.len) |element| {
+        print("{c}", .{board[element]});
+        if ((element + 1) % 3 == 0)
+        {
+            print("\n", .{});
+        }
+    }
+}
+
 pub fn get_space() usize
 {
     const input_max : u8 = 2;
@@ -82,15 +94,22 @@ pub fn check_diags(player : Player, board : []u8) bool {
     var i : usize = 0;
     var counter : i32 = 0;
     // top left to bottom right diagonal
-    while (i <= 8) : (i += 2){
+    while (i <= 8) : (i += 4){
         if (board[i] == player.player_num) {counter += 1;}
     }
     if (counter == 3) {return true;}
-    // TODO: top right to bottom left diagonal
+
+    counter = 0;
+    i = 2;
+    while (i <= 6) : (i += 2) {
+        if (board[i] == player.player_num) {counter += 1;}
+    }
+    if (counter == 3) {return true;}
     return false;
 }
 
 pub fn check_for_win(player : Player, board : []u8) bool {
+    print("Checking for win\n",.{});
     const win_rows = check_rows(player, board[0..]);
     const win_cols = check_cols(player, board[0..]);
     const win_diag = check_diags(player, board[0..]);
