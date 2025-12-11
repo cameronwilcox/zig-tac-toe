@@ -1,10 +1,7 @@
 const std = @import("std");
-const stdin = std.io.getStdIn().reader();
 const print = std.debug.print;
 
 pub fn main() !void {
-    print("test", .{});
-
     _ = try start();
 }
 
@@ -29,12 +26,11 @@ const Game = struct {
     }
 };
 
-// TODO: : implement printing of the board
 pub fn print_board(board : []u8) void
 {
-    for (0..board.len) |element| {
-        print("{c}", .{board[element]});
-        if ((element + 1) % 3 == 0)
+    for (0..board.len) |element_num| {
+        print("{c}", .{board[element_num]});
+        if ((element_num + 1) % 3 == 0)
         {
             print("\n", .{});
         }
@@ -43,16 +39,18 @@ pub fn print_board(board : []u8) void
 
 pub fn get_space() usize
 {
-    const input_max : u8 = 2;
-    var buf : [input_max]u8 = undefined;
-    // handle when the user tries to input something too long
-    const result = while (true){
-        const string = stdin.readUntilDelimiterOrEof(&buf, '\n') catch {
-            print("Bad input, try again.\n",.{});
+    var stdin_buffer: [10]u8 = undefined;
+    var stdin = std.fs.File.stdin().reader(&stdin_buffer);
+    var line_buffer: [10]u8 = undefined;
+    var writer: std.io.Writer = .fixed(&line_buffer);
+    const result = while(true){
+        const line_length = stdin.interface.streamDelimiterLimit(&writer, '\n', .unlimited) catch |err| {
+            print("Bad input, try again. err: {}\n", .{err});
             continue;
         };
-        const value = std.fmt.parseInt(i32, string orelse "bad", 10) catch {
-            print("Not a number, try again.\n",.{});
+        const string = line_buffer[0..line_length];
+        const value = std.fmt.parseInt(i32, string, 10) catch |err| {
+            print("Not a number, try again. err: {}\n",.{err});
             continue;
         };
         if (value < 1 or value > 9){
@@ -109,53 +107,55 @@ pub fn check_diags(player : Player, board : []u8) bool {
 }
 
 pub fn check_for_win(player : Player, board : []u8) bool {
-    print("Checking for win\n",.{});
+    print("Checking for win...\n",.{});
     const win_rows = check_rows(player, board[0..]);
     const win_cols = check_cols(player, board[0..]);
     const win_diag = check_diags(player, board[0..]);
     return (win_rows or win_cols or win_diag);
 }
 
-pub fn place_on_board(index : usize, player : Player, board : []u8) void{
-    while (true) {
-        if (board[index - 1] == 'a'){
-            board[index - 1] = player.player_num;
-            print("board[value - 1]: {c}\n",.{board[index - 1]});
-        }
-        else {
-            print("That spot has already been picked.\n",.{});
-            continue;
-        }
-        break;
+pub fn place_on_board(index : usize, player : Player, board : []u8) bool{
+    if (board[index - 1] == 'a'){
+        board[index - 1] = player.player_num;
+        return true;
+    }
+    else {
+        print("That spot has already been picked.\n",.{});
+        return false;
     }
 }
 
 pub fn turn(player : Player, board : []u8) !bool {
-    const value = get_space();
-    print("value: {}\n",.{value});
-    print("board[0]: {}\n",.{board[0]});
-    place_on_board(value, player, board[0..]);
+    var still_going = false;
+    while (!still_going) {
+        const value = get_space();
+        still_going = place_on_board(value, player, board[0..]);
+    }
     // then need to check for a win
+    print_board(board[0..]);
     return check_for_win(player, board[0..]);
 }
 
 pub fn start() !void {
     var game : Game = .init(.{.player_num = '1', .turns_taken = 0}, .{.player_num = '2', .turns_taken = 0});
-    print("Game.player1.player_num: {c}\n", .{game.player1.player_num});
 
     var game_over : bool = false;
     while (!game_over)
     {
         if(game.current_turn)
         {
+            print("Player 1 turn\n", .{});
             game_over = try turn(game.player1, game.board[0..]);
             game.current_turn = false;
         }
         else
         {
+            print("Player 2 turn\n", .{});
             game_over = try turn(game.player2, game.board[0..]);
             game.current_turn = true;
         }
-
+        if (game_over) {
+            print("GAME OVER\n", .{});
+        }
     }
 }
